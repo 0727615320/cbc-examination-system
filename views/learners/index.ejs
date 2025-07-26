@@ -1,0 +1,114 @@
+<%- include('../partials/header') %>
+
+<div class="container mt-4">
+  <!-- ✅ Flash Messages -->
+  <% if (messages.success.length > 0) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= messages.success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <% if (messages.error.length > 0) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= messages.error[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <h2>Manage Learners - <%= assigned_class %></h2>
+  <p>Welcome, <%= username %>!</p>
+
+  <!-- Add Learner Form -->
+  <form action="/learners/add" method="POST" class="row g-3 mt-4">
+    <div class="col-md-4">
+      <input type="text" name="full_name" class="form-control" placeholder="Full Name" required>
+    </div>
+    <div class="col-md-3">
+      <input type="text" name="adm_no" class="form-control" placeholder="Admission Number" required>
+    </div>
+    <div class="col-md-3">
+      <select name="gender" class="form-control" required>
+        <option value="">-- Gender --</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-success w-100" type="submit">Add Learner</button>
+    </div>
+  </form>
+
+  <!-- Learner List -->
+  <% if (learners.length > 0) { %>
+    <table class="table mt-4">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>ADM No</th>
+          <th>Gender</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% learners.forEach((learner, i) => { %>
+          <tr>
+            <td><%= i + 1 %></td>
+            <td><%= learner.full_name %></td>
+            <td><%= learner.adm_no %></td>
+            <td><%= learner.gender %></td>
+            <td>
+              <!-- Edit Button (triggers modal) -->
+              <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal-<%= learner.id %>">Edit</button>
+
+              <!-- Delete Form -->
+              <form action="/learners/delete/<%= learner.id %>" method="POST" style="display:inline-block;" onsubmit="return confirm('Delete this learner?');">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+
+              <!-- Edit Modal -->
+              <div class="modal fade" id="editModal-<%= learner.id %>" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                  <form action="/learners/edit/<%= learner.id %>" method="POST" class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Edit Learner</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                      <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="full_name" class="form-control" value="<%= learner.full_name %>" required>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">ADM No</label>
+                        <input type="text" name="adm_no" class="form-control" value="<%= learner.adm_no %>" required>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Gender</label>
+                        <select name="gender" class="form-control" required>
+                          <option value="">-- Gender --</option>
+                          <option value="Male" <%= learner.gender === 'Male' ? 'selected' : '' %>>Male</option>
+                          <option value="Female" <%= learner.gender === 'Female' ? 'selected' : '' %>>Female</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button class="btn btn-primary" type="submit">Update</button>
+                      <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } else { %>
+    <div class="alert alert-warning mt-4">No learners found for <strong><%= assigned_class %></strong>.</div>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

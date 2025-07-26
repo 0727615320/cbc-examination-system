@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Enter Learner Performance</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f9f9f9;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      margin-top: 20px;
+      background-color: #007bff;
+      color: white;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h2>Enter Performance for Learner</h2>
+
+  <form action="/results/submit" method="POST">
+    <label>Student Name:</label>
+    <input type="text" name="name" required>
+
+    <label>ADM No:</label>
+    <input type="text" name="adm_no" required>
+
+    <label>Class:</label>
+    <input type="text" name="class" required>
+
+    <label>Term:</label>
+    <select name="term" required>
+      <option value="1">Term 1</option>
+      <option value="2">Term 2</option>
+      <option value="3">Term 3</option>
+    </select>
+
+    <label>Year:</label>
+    <input type="number" name="year" value="<%= new Date().getFullYear() %>" required>
+
+    <label>Exam Type:</label>
+    <select name="exam_type" required>
+      <option value="Opening">Opening</option>
+      <option value="Mid-Term">Mid-Term</option>
+      <option value="End-Term">End-Term</option>
+    </select>
+
+    <label>Subject 1 Score:</label>
+    <input type="number" name="subject1" required>
+
+    <label>Subject 2 Score:</label>
+    <input type="number" name="subject2" required>
+
+    <label>Subject 3 Score:</label>
+    <input type="number" name="subject3" required>
+
+    <button type="submit">Submit Results</button>
+  </form>
+</body>
+</html>

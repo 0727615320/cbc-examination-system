@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CBC Report Form</title>
+  <style>
+    body {
+      font-family: "Times New Roman", serif;
+      margin: 10mm auto;
+      padding: 10mm;
+      width: 190mm;
+      max-width: 100%;
+      background: #fdfcf5;
+      position: relative;
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    .watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 40px;
+      color: rgba(200, 200, 200, 0.15);
+      white-space: nowrap;
+      z-index: 0;
+      pointer-events: none;
+      font-weight: bold;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      padding: 0 10px;
+    }
+    .logo {
+      width: 80px;
+      height: auto;
+    }
+    .seal-top-right {
+      width: 90px;
+      max-width: 25%;
+      height: auto;
+      margin-right: 5px;
+    }
+
+    .header {
+      text-align: center;
+      border-bottom: 2px solid #000;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+      position: relative;
+      z-index: 10;
+      flex-grow: 1;
+    }
+    .header h2 {
+      font-size: 22px;
+      margin: 5px 0;
+    }
+    .header span.red {
+      color: #d00;
+    }
+    .school-info {
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .student-info {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin: 10px 0 15px;
+      font-size: 13px;
+      position: relative;
+      z-index: 10;
+    }
+    .student-info p {
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 12px;
+      position: relative;
+      z-index: 10;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 6px;
+      text-align: center;
+    }
+    th {
+      background: #f0f0f0;
+    }
+
+    .comments {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 15px;
+      margin: 15px 0;
+      font-size: 12px;
+      position: relative;
+      z-index: 10;
+    }
+    .comments p {
+      margin: 0;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background: #fff;
+    }
+
+    .divider {
+      border-top: 1px solid #aaa;
+      margin: 15px 0;
+    }
+
+    .date-info {
+      display: flex;
+      gap: 40px;
+      margin: 10px 0;
+      font-size: 14px;
+      font-weight: bold;
+      position: relative;
+      z-index: 10;
+    }
+    .date-info p {
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .footer {
+      font-size: 12px;
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      z-index: 10;
+    }
+
+    @media print {
+      .no-print { display: none; }
+      body { margin: 0; padding: 10mm; width: 190mm; }
+      .watermark { position: fixed; }
+      table, tr, td, th { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="watermark">RAYS OF HOPE COMMUNITY SCHOOL</div>
+
+  <div class="top-bar">
+    <img src="/logo.jpg" alt="Logo" class="logo" />
+    <div class="header">
+      <h2>RAYS OF HOPE <span class="red">COMMUNITY SCHOOL</span></h2>
+      <div class="school-info">
+        <p>P.O. BOX 90767 | Tel: 0727615320 / 072815995 | Website: raysofhopecommunity.com</p>
+        <p><em>Motto: "Arise and shine your light has come."</em></p>
+        <h3>End of Term Report Form</h3>
+      </div>
+    </div>
+    <img src="/seal.png" alt="Seal" class="seal-top-right" />
+  </div>
+
+  <div class="student-info">
+    <p><strong>Student Name:</strong> <%= student.full_name %></p>
+    <p><strong>ADM No:</strong> <%= student.adm_no %></p>
+    <p><strong>Class:</strong> <%= student.class %></p>
+    <p><strong>Term:</strong> <%= student.term %></p>
+    <p><strong>Year:</strong> <%= student.year %></p>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Learning Area</th>
+        <th>CAT 1</th>
+        <th>CAT 2</th>
+        <th>Final Level</th>
+        <th>Remark</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% subjects.forEach(subject => { %>
+        <tr>
+          <td><%= subject.name %></td>
+          <td><%= subject.cat1 %></td>
+          <td><%= subject.cat2 %></td>
+          <td><%= subject.final %></td>
+          <td><%= subject.remark %></td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+
+  <div class="comments">
+    <p><strong>Remarks on Core Competencies:</strong><br> <%= student.core_remark %></p>
+    <p><strong>Class Teacher's Comment:</strong><br> <%= student.teacher_remark %></p>
+    <p><strong>Head Teacher's Comment:</strong><br> <%= student.headteacher_remark %></p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="date-info">
+    <p><strong>Opening Date:</strong> <%= student.opening_date %></p>
+    <p><strong>Closing Date:</strong> <%= student.closing_date %></p>
+  </div>
+
+  <div class="footer">
+    <p><strong>Class Teacher:</strong> <%= student.class_teacher %></p>
+    <p><strong>Headteacher:</strong> <%= student.headteacher %></p>
+  </div>
+
+  <div class="no-print">
+    <button onclick="window.print()">🖨️ Print Report</button>
+    <a href="/reports/pdf/<%= student.id %>/<%= student.term %>/<%= student.year %>" 
+       class="btn-download" 
+       style="margin-left: 10px; padding: 5px 10px; background: #007bff; color: #fff; text-decoration: none; border-radius: 4px;">
+      ⬇️ Download PDF
+    </a>
+  </div>
+</body>
+</html>

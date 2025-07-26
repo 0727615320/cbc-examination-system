@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DASHBOARD - <%= role.toUpperCase() %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background-color: #f4f6f9;
+      margin: 0;
+    }
+    header {
+      background-color: #003366;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    nav {
+      background: #0055aa;
+      color: #fff;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      margin-left: 20px;
+    }
+    .container {
+      padding: 30px;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Rays of Hope Examination Management System</h1>
+</header>
+<nav>
+  <div>Welcome, <strong><%= username %></strong> — <%= role.toUpperCase() %></div>
+  <div>
+    <a href="/logout">Logout</a>
+  </div>
+</nav>
+<div class="container">

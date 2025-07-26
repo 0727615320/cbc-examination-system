@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Teacher Dashboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 2rem;
+      background-color: #f0f2f5;
+    }
+    .card {
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Welcome, <%= username %></h1>
+    <p><strong>Role:</strong> <%= role %></p>
+    <p><strong>Class:</strong> <%= assigned_class %></p>
+
+    <ul>
+      <li><a href="/students?class=<%= assigned_class %>">My Class Learners</a></li>
+      <li><a href="/results?class=<%= assigned_class %>">Submit/Update Results</a></li>
+      <li><a href="/report?class=<%= assigned_class %>">Generate Report Forms</a></li>
+      <li><a href="/logout">Logout</a></li>
+    </ul>
+  </div>
+</body>
+</html>

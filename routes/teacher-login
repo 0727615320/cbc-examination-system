@@ -1,0 +1,35 @@
+const express = require("express");
+const router = express.Router();
+const bcrypt = require("bcrypt"); // If using hashed passwords
+const db = require('../db/db'); // ✅ CORRECT
+ // Your MySQL pool/connection
+
+router.post("/teacher-login", async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const [rows] = await db.query("SELECT * FROM teachers WHERE username = ?", [username]);
+
+    if (rows.length === 0) {
+      return res.json({ success: false, message: "Invalid credentials" });
+    }
+
+    const teacher = rows[0];
+
+    // If passwords are hashed:
+    // const match = await bcrypt.compare(password, teacher.password);
+    const match = password === teacher.password; // Plain-text fallback (for demo)
+
+    if (!match) {
+      return res.json({ success: false, message: "Wrong password" });
+    }
+
+    // You could add session/cookie logic here
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+module.exports = router;

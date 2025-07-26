@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Student Results</title>
+  <link rel="stylesheet" href="/css/results.css">
+</head>
+<body>
+  <h2>Edit Results for <%= results[0].student_name %> (ADM: <%= results[0].adm_no %>)</h2>
+
+  <div class="back-links">
+    <a href="/dashboard" class="btn btn-primary">🏠 Dashboard</a>
+    <a href="/results/entry" class="btn btn-primary">➕ New Entry</a>
+  </div>
+
+  <% if (messages && messages.success) { %>
+    <div class="flash-success"><%= messages.success %></div>
+  <% } %>
+  <% if (messages && messages.error) { %>
+    <div class="flash-error"><%= messages.error %></div>
+  <% } %>
+
+  <form action="/results/edit/<%= results[0].student_id %>" method="POST">
+    <input type="hidden" name="totalSubjects" value="<%= results.length %>">
+    <table>
+      <thead>
+        <tr>
+          <th>Learning Area</th>
+          <th>CAT 1</th>
+          <th>CAT 2</th>
+          <th>Final Rate</th>
+          <th>Remarks</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% results.forEach((res, index) => { %>
+          <tr>
+            <td>
+              <%= res.subject %>
+              <input type="hidden" name="subject_<%= index %>" value="<%= res.subject %>">
+            </td>
+            <td><input type="number" name="cat1_<%= index %>" class="cat1" min="1" max="4" value="<%= res.performance_level %>" required></td>
+            <td><input type="number" name="cat2_<%= index %>" class="cat2" min="1" max="4" value="<%= res.performance_level %>" required></td>
+            <td><input type="number" class="final" value="<%= res.performance_level %>" readonly></td>
+            <td><input type="text" class="remarks" value="<%= res.remarks %>" readonly></td>
+            <td>
+              <button type="button" class="btn btn-danger" onclick="deleteResult('<%= res.student_id %>', '<%= res.subject %>')">🗑 Delete</button>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <button type="submit" class="btn btn-primary">💾 Save All Changes</button>
+  </form>
+
+  <script>
+    document.querySelectorAll("tbody tr").forEach(row => {
+      const cat1 = row.querySelector(".cat1");
+      const cat2 = row.querySelector(".cat2");
+      const final = row.querySelector(".final");
+      const remarks = row.querySelector(".remarks");
+
+      function calculate() {
+        const c1 = parseFloat(cat1.value);
+        const c2 = parseFloat(cat2.value);
+        if (!isNaN(c1) && !isNaN(c2)) {
+          const avg = Math.round((c1 + c2) / 2);
+          final.value = avg;
+          remarks.value =
+            avg === 1 ? "Below Expectation" :
+            avg === 2 ? "Approaching Expectation" :
+            avg === 3 ? "Meeting Expectation" :
+            avg === 4 ? "Exceeding Expectation" : "";
+        } else {
+          final.value = "";
+          remarks.value = "";
+        }
+      }
+      cat1.addEventListener("input", calculate);
+      cat2.addEventListener("input", calculate);
+    });
+
+    function deleteResult(studentId, subject) {
+      if (confirm(`Delete result for ${subject}?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/results/delete/${studentId}/${encodeURIComponent(subject)}`;
+        document.body.appendChild(form);
+        form.submit();
+      }
+    }
+  </script>
+</body>
+</html>

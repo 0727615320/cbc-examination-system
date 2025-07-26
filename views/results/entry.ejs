@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CBC Performance Entry – CAT Assessment</title>
+  <link rel="stylesheet" href="/css/results.css">
+</head>
+<body>
+  <h2>CBC Performance Entry – CAT Assessment</h2>
+
+  <% if (success) { %>
+    <div class="flash-success"><%= success %></div>
+  <% } %>
+  <% if (error) { %>
+    <div class="flash-error"><%= error %></div>
+  <% } %>
+
+  <form action="/results/entry" method="POST" class="form-section">
+    <!-- ===== Student Information ===== -->
+    <div class="section">
+      <h3>Student Information</h3>
+      <div class="form-grid">
+        <div>
+          <label>Select Learner:</label>
+          <select id="learnerSelect" required>
+            <option value="">-- Choose Learner --</option>
+            <% learners.forEach(learner => { %>
+              <option value="<%= learner.id %>" data-name="<%= learner.full_name %>" data-adm="<%= learner.adm_no %>">
+                <%= learner.full_name %> (ADM: <%= learner.adm_no %>)
+              </option>
+            <% }) %>
+          </select>
+        </div>
+        <div>
+          <label>Student ID:</label>
+          <input type="text" id="displayStudentId" readonly>
+        </div>
+        <input type="hidden" name="student_id" id="studentId">
+        <input type="hidden" name="student_name" id="studentName">
+        <input type="hidden" name="adm_no" id="admNo">
+
+        <div>
+          <label>Class:</label>
+          <select name="className" id="classSelector" required>
+            <% const classes = ["PP1","PP2","Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9"]; %>
+            <% classes.forEach(c => { %>
+              <option value="<%= c %>" <%= c === assigned_class ? 'selected' : '' %>><%= c %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div>
+          <label>Term:</label>
+          <select name="term" required>
+            <option value="">-- Select Term --</option>
+            <option value="1">Term 1</option>
+            <option value="2">Term 2</option>
+            <option value="3">Term 3</option>
+          </select>
+        </div>
+        <div>
+          <label>Year:</label>
+          <input type="text" name="year" value="2025" required>
+        </div>
+        <div>
+          <label>Opening Date:</label>
+          <input type="date" name="opening_date" id="openingDate" required>
+        </div>
+        <div>
+          <label>Closing Date:</label>
+          <input type="date" name="closing_date" id="closingDate" required>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Performance Table ===== -->
+    <div class="section">
+      <h3>Performance</h3>
+      <div id="subjectsSection"></div>
+      <input type="hidden" id="totalSubjects" name="totalSubjects" value="0">
+    </div>
+
+    <!-- ===== Comments Section ===== -->
+    <div class="section">
+      <h3>Comments & Signatures</h3>
+      <label>Remarks on Core Competencies:</label>
+      <textarea name="remarks_on_core_competencies" placeholder="e.g., Shows consistent growth."></textarea>
+
+      <label>Class Teacher's Comment:</label>
+      <textarea name="class_teacher_comment" placeholder="e.g., Maintain good effort."></textarea>
+
+      <label>Head Teacher's Comment:</label>
+      <textarea name="head_teacher_comment" placeholder="e.g., Promoted to next grade."></textarea>
+
+      <label>Class Teacher:</label>
+      <input type="text" name="class_teacher" value="<%= username %>" required>
+
+      <label>Headteacher:</label>
+      <input type="text" name="headteacher" value="Headteacher">
+    </div>
+
+    <button type="submit" class="btn btn-primary">✅ Submit Performance</button>
+  </form>
+
+  <script>
+    // Set default dates
+    document.getElementById("openingDate").value = "2025-07-19";
+    document.getElementById("closingDate").value = "2025-08-26";
+
+    // CBC Rationalized Learning Areas
+    const classSubjects = {
+      "PP1": [
+        "Language Activities", "Mathematics Activities", "Creative Activities", 
+        "Environmental Activities", "Religious Activities"
+      ],
+      "PP2": [
+        "Language Activities", "Mathematics Activities", "Creative Activities", 
+        "Environmental Activities", "Religious Activities"
+      ],
+      "Grade 1": [
+        "Indigenous Language", "English", "Kiswahili", "Mathematics",
+        "Religious Education", "Environmental Activities", "Creative Activities"
+      ],
+      "Grade 2": [
+        "Indigenous Language", "English", "Kiswahili", "Mathematics",
+        "Religious Education", "Environmental Activities", "Creative Activities"
+      ],
+      "Grade 3": [
+        "Indigenous Language", "English", "Kiswahili", "Mathematics",
+        "Religious Education", "Environmental Activities", "Creative Activities"
+      ],
+      "Grade 4": [
+        "English", "Kiswahili", "Mathematics", "Religious Education",
+        "Agriculture & Nutrition", "Science & Technology", "Social Studies", "Creative Arts"
+      ],
+      "Grade 5": [
+        "English", "Kiswahili", "Mathematics", "Religious Education",
+        "Agriculture & Nutrition", "Science & Technology", "Social Studies", "Creative Arts"
+      ],
+      "Grade 6": [
+        "English", "Kiswahili", "Mathematics", "Religious Education",
+        "Agriculture & Nutrition", "Science & Technology", "Social Studies", "Creative Arts"
+      ],
+      "Grade 7": [
+        "English", "Kiswahili", "Mathematics", "Religious Education",
+        "Social Studies", "Integrated Science", "Pre-Technical Studies",
+        "Agriculture & Nutrition", "Creative Arts & Sports"
+      ],
+      "Grade 8": [
+        "English", "Kiswahili", "Mathematics", "Religious Education",
+        "Social Studies", "Integrated Science", "Pre-Technical Studies",
+        "Agriculture & Nutrition", "Creative Arts & Sports"
+      ],
+      "Grade 9": [
+        "English", "Kiswahili", "Mathematics", "Religious Education",
+        "Social Studies", "Integrated Science", "Pre-Technical Studies",
+        "Agriculture & Nutrition", "Creative Arts & Sports"
+      ]
+    };
+
+    const classSelect = document.getElementById("classSelector");
+    const subjectsSection = document.getElementById("subjectsSection");
+    const totalSubjectsInput = document.getElementById("totalSubjects");
+
+    function generateSubjectsTable(subjects) {
+      if (!subjects) {
+        subjectsSection.innerHTML = '';
+        totalSubjectsInput.value = 0;
+        return;
+      }
+      let html = `<table>
+        <thead><tr><th>Learning Area</th><th>CAT 1</th><th>CAT 2</th><th>Final Rate</th><th>Remarks</th></tr></thead>
+        <tbody>`;
+      subjects.forEach((subject, index) => {
+        html += `<tr>
+          <td>${subject}<input type="hidden" name="subject_${index}" value="${subject}"></td>
+          <td><input type="number" name="cat1_${index}" class="cat1" min="1" max="4" required></td>
+          <td><input type="number" name="cat2_${index}" class="cat2" min="1" max="4" required></td>
+          <td><input type="number" name="final_${index}" class="final" readonly></td>
+          <td><input type="text" name="remarks_${index}" class="remarks" readonly></td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      subjectsSection.innerHTML = html;
+      totalSubjectsInput.value = subjects.length;
+      setupCalculationLogic();
+    }
+
+    function setupCalculationLogic() {
+      document.querySelectorAll("#subjectsSection tbody tr").forEach(row => {
+        const cat1 = row.querySelector(".cat1");
+        const cat2 = row.querySelector(".cat2");
+        const final = row.querySelector(".final");
+        const remarks = row.querySelector(".remarks");
+        function calculate() {
+          const c1 = parseFloat(cat1.value);
+          const c2 = parseFloat(cat2.value);
+          if (!isNaN(c1) && !isNaN(c2)) {
+            const avg = Math.round((c1 + c2) / 2);
+            final.value = avg;
+            remarks.value =
+              avg === 1 ? "Below Expectation" :
+              avg === 2 ? "Approaching Expectation" :
+              avg === 3 ? "Meeting Expectation" :
+              avg === 4 ? "Exceeding Expectation" : "";
+          } else {
+            final.value = "";
+            remarks.value = "";
+          }
+        }
+        cat1.addEventListener("input", calculate);
+        cat2.addEventListener("input", calculate);
+      });
+    }
+
+    document.getElementById("learnerSelect").addEventListener("change", function() {
+      const selectedOption = this.options[this.selectedIndex];
+      document.getElementById("displayStudentId").value = selectedOption.value;
+      document.getElementById("studentId").value = selectedOption.value;
+      document.getElementById("studentName").value = selectedOption.dataset.name || '';
+      document.getElementById("admNo").value = selectedOption.dataset.adm || '';
+    });
+
+    generateSubjectsTable(classSubjects[classSelect.value]);
+    classSelect.addEventListener("change", () => generateSubjectsTable(classSubjects[classSelect.value]));
+  </script>
+</body>
+</html>
