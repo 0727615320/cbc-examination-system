@@ -15,11 +15,11 @@ app.use(session({
   secret: 'cbc-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 2 * 60 * 60 * 1000 } // 2-hour session expiry
+  cookie: { maxAge: 2 * 60 * 60 * 1000 } // 2 hours
 }));
 app.use(flash());
 
-// Make flash messages available to all EJS templates
+// Make flash messages available in all EJS templates
 app.use((req, res, next) => {
   res.locals.messages = {
     success: req.flash('success'),
@@ -55,7 +55,7 @@ app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
 
-// Default route
+// Default route redirect
 app.get('/', (req, res) => {
   if (req.session.user) {
     res.redirect('/dashboard');
@@ -64,7 +64,7 @@ app.get('/', (req, res) => {
   }
 });
 
-// Start server — bind to 0.0.0.0 for Koyeb
+// ✅ FINAL FIX FOR KOYEB: bind to 0.0.0.0 and process.env.PORT
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
