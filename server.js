@@ -39,7 +39,7 @@ const dashboardRoute = require('./routes/dashboard');
 const teachersRoute = require('./routes/teachers');
 const learnersRoutes = require('./routes/learners');
 const resultsRoutes = require('./routes/results');
-const reportsRoutes = require('./routes/reports'); // ✅ keep this only ONCE
+const reportsRoutes = require('./routes/reports');
 
 // Register routes
 app.use('/', indexRoutes);
@@ -50,6 +50,11 @@ app.use('/learners', learnersRoutes);
 app.use('/results', resultsRoutes);
 app.use('/reports', reportsRoutes);
 
+// Health check route for Koyeb
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 // Default route
 app.get('/', (req, res) => {
   if (req.session.user) {
@@ -59,12 +64,8 @@ app.get('/', (req, res) => {
   }
 });
 
-// Health check route for Koyeb
-app.get('/health', (req, res) => res.sendStatus(200));
-
-// Start server
+// Start server — bind to 0.0.0.0 for Koyeb
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
 });
-
