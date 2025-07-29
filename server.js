@@ -2,6 +2,7 @@ const express = require('express');
 const session = require('express-session');
 const flash = require('connect-flash');
 const path = require('path');
+const db = require('./db/db'); // ✅ DB connection file
 
 const app = express();
 
@@ -19,7 +20,7 @@ app.use(session({
 }));
 app.use(flash());
 
-// Make flash messages available in all EJS templates
+// Flash message access in all views
 app.use((req, res, next) => {
   res.locals.messages = {
     success: req.flash('success'),
@@ -50,9 +51,20 @@ app.use('/learners', learnersRoutes);
 app.use('/results', resultsRoutes);
 app.use('/reports', reportsRoutes);
 
-// Health check route for Koyeb
+// Health check for Koyeb
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
+});
+
+// ✅ TEMPORARY DEBUG ROUTE
+app.get('/debug-results', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM results');
+    res.json(rows);
+  } catch (err) {
+    console.error('❌ Error fetching results:', err);
+    res.status(500).send('Database error');
+  }
 });
 
 // Default route redirect
@@ -64,7 +76,7 @@ app.get('/', (req, res) => {
   }
 });
 
-// ✅ FINAL FIX FOR KOYEB: bind to 0.0.0.0 and process.env.PORT
+// ✅ Koyeb port binding
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
