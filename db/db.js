@@ -1,12 +1,12 @@
+const mysql = require('mysql2/promise');  // ✅ use promise version
 
-const mysql = require('mysql2');
 const sslOptions = process.env.DB_SSL === 'true' ? {
   ssl: {
     ca: process.env.MYSQL_CA_PEM
   }
 } : {};
 
-const connection = mysql.createConnection({
+const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
@@ -14,3 +14,5 @@ const connection = mysql.createConnection({
   port: process.env.DB_PORT,
   ...sslOptions
 });
+
+module.exports = pool;
