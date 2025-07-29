@@ -1,3 +1,5 @@
+
+const mysql = require('mysql2');
 const sslOptions = process.env.DB_SSL === 'true' ? {
   ssl: {
     ca: process.env.MYSQL_CA_PEM
