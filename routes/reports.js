@@ -12,7 +12,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
 
   try {
     let query = 'SELECT * FROM students';
-    let params = [];
+    const params = [];
 
     if (role === 'teacher') {
       query += ' WHERE class = ?';
@@ -27,11 +27,11 @@ router.get('/', ensureAuthenticated, async (req, res) => {
   }
 });
 
-// ===================== HELPER: Format Date (Readable) =====================
+// ===================== HELPER: Format Date =====================
 function formatDateReadable(dateValue) {
   if (!dateValue) return '';
   const date = new Date(dateValue);
-  return date.toLocaleDateString('en-GB', {
+  return date.toLocaleDateString('en-KE', {
     day: '2-digit',
     month: 'short',
     year: 'numeric'
@@ -40,23 +40,21 @@ function formatDateReadable(dateValue) {
 
 // ===================== HELPER: Fetch Report Data =====================
 async function fetchReportData(studentId, term = 'Term 1', year = new Date().getFullYear()) {
-  const numericTerm = isNaN(term) ? parseInt((term + '').replace(/\D/g, ''), 10) : term;
+  const numericTerm = isNaN(term) ? parseInt(term.replace(/\D/g, ''), 10) : term;
 
-  // Get student
+  // 1. Get student
   const [studentRows] = await db.query('SELECT * FROM students WHERE id = ?', [studentId]);
   if (studentRows.length === 0) return null;
   const student = studentRows[0];
 
-  // Get results and map to subjects
-  const [results] = await db.query(
-    `SELECT subject, cat1, cat2, performance_level, remarks
-     FROM results
-     WHERE student_id = ? AND term = ? AND year = ?
-     ORDER BY subject`,
-    [studentId, numericTerm, year]
-  );
+  // 2. Get results per subject
+  const [results] = await db.query(`
+    SELECT subject, cat1, cat2, performance_level, remarks
+    FROM results
+    WHERE student_id = ? AND term = ? AND year = ?
+    ORDER BY subject ASC
+  `, [studentId, numericTerm, year]);
 
-  // Convert to subjects array
   const subjects = results.map(r => ({
     name: r.subject,
     cat1: r.cat1,
@@ -65,25 +63,30 @@ async function fetchReportData(studentId, term = 'Term 1', year = new Date().get
     remark: r.remarks
   }));
 
-  // Get report info
-  const [reportRows] = await db.query(
-    `SELECT * FROM reports WHERE student_id = ? AND term = ? AND year = ? LIMIT 1`,
-    [studentId, numericTerm, year]
-  );
+  // 3. Get report metadata (core competencies, remarks)
+  const [reportRows] = await db.query(`
+    SELECT *
+    FROM reports
+    WHERE student_id = ? AND term = ? AND year = ?
+    LIMIT 1
+  `, [studentId, numericTerm, year]);
 
   const report = reportRows[0] || {
     term: `Term ${numericTerm}`,
     year,
-    remarks_on_core_competencies: 'Shows consistent growth.',
-    class_teacher_comment: 'Maintain good effort.',
-    head_teacher_comment: 'Promoted to next grade.',
-    opening_date: new Date(),
-    closing_date: new Date(),
-    class_teacher: 'Class Teacher',
-    headteacher: 'Headteacher'
+    remarks_on_core_competencies: '',
+    class_teacher_comment: '',
+    head_teacher_comment: '',
+    opening_date: null,
+    closing_date: null,
+    class_teacher: '',
+    headteacher: '',
+    attendance: '',
+    conduct: '',
+    promoted: ''
   };
 
-  // Attach additional data to student
+  // 4. Populate student display data
   student.term = `Term ${numericTerm}`;
   student.year = year;
   student.core_remark = report.remarks_on_core_competencies;
@@ -93,6 +96,9 @@ async function fetchReportData(studentId, term = 'Term 1', year = new Date().get
   student.closing_date = formatDateReadable(report.closing_date);
   student.class_teacher = report.class_teacher;
   student.headteacher = report.headteacher;
+  student.attendance = report.attendance || 'N/A';
+  student.conduct = report.conduct || 'Good';
+  student.promoted = report.promoted || 'Yes';
 
   return { student, subjects, report };
 }
@@ -113,11 +119,17 @@ router.get(['/view/:studentId/:term/:year', '/view/:studentId'], ensureAuthentic
 
     const { student, subjects, report } = data;
 
+    // Access control for teachers
     if (user.role === 'teacher' && student.class !== user.assigned_class) {
       return res.status(403).send('Access denied');
     }
 
-    res.render('cbc_report', { student, subjects, report, messages: req.flash() });
+    res.render('cbc_report', {
+      student,
+      subjects,
+      report,
+      messages: req.flash()
+    });
   } catch (err) {
     console.error('❌ Error fetching report:', err);
     req.flash('error', 'Could not load report.');
@@ -125,7 +137,7 @@ router.get(['/view/:studentId/:term/:year', '/view/:studentId'], ensureAuthentic
   }
 });
 
-// ===================== PDF REPORT VIEW (Using Puppeteer) =====================
+// ===================== PDF GENERATION =====================
 router.get(['/pdf/:studentId/:term/:year', '/pdf/:studentId'], ensureAuthenticated, async (req, res) => {
   const { studentId, term, year } = req.params;
   const currentTerm = term || 'Term 1';
@@ -141,24 +153,29 @@ router.get(['/pdf/:studentId/:term/:year', '/pdf/:studentId'], ensureAuthenticat
       return res.status(403).send('Access denied');
     }
 
-    // Render EJS to HTML
+    // Render EJS
     const html = await ejs.renderFile(
       path.join(__dirname, '../views/cbc_report.ejs'),
       { student, subjects, report }
     );
 
-    // Launch Puppeteer
+    // Puppeteer to generate PDF
     const browser = await puppeteer.launch({
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     const page = await browser.newPage();
-
     await page.setContent(html, { waitUntil: 'networkidle0' });
+
     const buffer = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' }
+      margin: {
+        top: '10mm',
+        right: '10mm',
+        bottom: '10mm',
+        left: '10mm'
+      }
     });
 
     await browser.close();
@@ -170,7 +187,7 @@ router.get(['/pdf/:studentId/:term/:year', '/pdf/:studentId'], ensureAuthenticat
     });
     res.send(buffer);
   } catch (err) {
-    console.error('Puppeteer PDF generation error:', err);
+    console.error('❌ Puppeteer PDF error:', err);
     res.status(500).send('PDF generation error');
   }
 });
