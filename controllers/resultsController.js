@@ -1,6 +1,6 @@
 const db = require('../db/db');
 
-// ================== CREATE or UPDATE (Save results + comments) ==================
+// ================== CREATE (Save results + comments) ==================
 exports.savePerformance = async (req, res) => {
   const {
     student_id,
@@ -16,14 +16,30 @@ exports.savePerformance = async (req, res) => {
     headteacher
   } = req.body;
 
+  const numericTerm = term.replace(/\D/g, '');
   const connection = await db.getConnection();
   await connection.beginTransaction();
 
   try {
-    // === 1. Insert or Update Report (comments + dates only) ===
+    // Check if any results already exist for this student, term, year
+    for (let i = 0; i < totalSubjects; i++) {
+      const subject = req.body[`subject_${i}`];
+      const [existing] = await connection.query(
+        `SELECT 1 FROM results WHERE student_id = ? AND subject = ? AND term = ? AND year = ? LIMIT 1`,
+        [student_id, subject, numericTerm, year]
+      );
+
+      if (existing.length > 0) {
+        await connection.rollback();
+        req.flash('error', `❌ Results for ${subject} already exist for Term ${numericTerm}, ${year}. You must delete them before re-entering.`);
+        return res.redirect('/results/entry');
+      }
+    }
+
+    // === Insert or Update Report (comments + dates only) ===
     const [existingReport] = await connection.query(
       `SELECT id FROM reports WHERE student_id = ? AND term = ? AND year = ? LIMIT 1`,
-      [student_id, term, year]
+      [student_id, numericTerm, year]
     );
 
     if (existingReport.length === 0) {
@@ -35,7 +51,7 @@ exports.savePerformance = async (req, res) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           student_id,
-          term,
+          numericTerm,
           year,
           opening_date,
           closing_date,
@@ -46,29 +62,9 @@ exports.savePerformance = async (req, res) => {
           headteacher || 'Josphat Munyasia'
         ]
       );
-    } else {
-      await connection.query(
-        `UPDATE reports
-         SET opening_date = ?, closing_date = ?, remarks_on_core_competencies = ?,
-             class_teacher_comment = ?, head_teacher_comment = ?,
-             class_teacher = ?, headteacher = ?
-         WHERE student_id = ? AND term = ? AND year = ?`,
-        [
-          opening_date,
-          closing_date,
-          remarks_on_core_competencies || '',
-          class_teacher_comment || '',
-          head_teacher_comment || '',
-          class_teacher || '',
-          headteacher || 'Josphat Munyasia',
-          student_id,
-          term,
-          year
-        ]
-      );
     }
 
-    // === 2. Insert/Update Results (results table) ===
+    // === Insert Results ===
     for (let i = 0; i < totalSubjects; i++) {
       const subject = req.body[`subject_${i}`];
       const cat1 = parseInt(req.body[`cat1_${i}`], 10) || 0;
@@ -83,13 +79,8 @@ exports.savePerformance = async (req, res) => {
 
       await connection.query(
         `INSERT INTO results (student_id, subject, cat1, cat2, performance_level, remarks, term, year)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE
-            cat1 = VALUES(cat1),
-            cat2 = VALUES(cat2),
-            performance_level = VALUES(performance_level),
-            remarks = VALUES(remarks)`,
-        [student_id, subject, cat1, cat2, final, remarks, term, year]
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [student_id, subject, cat1, cat2, final, remarks, numericTerm, year]
       );
     }
 
@@ -106,7 +97,7 @@ exports.savePerformance = async (req, res) => {
   }
 };
 
-// ================== READ (Get student results for editing) ==================
+// ================== READ ==================
 exports.getStudentResults = async (req, res) => {
   const studentId = req.params.studentId;
 
@@ -132,7 +123,7 @@ exports.getStudentResults = async (req, res) => {
 
     res.render('results/edit', {
       results,
-      report: report[0] || {},  // Always provide a report object
+      report: report[0] || {},
       messages: req.flash()
     });
   } catch (err) {
@@ -142,7 +133,7 @@ exports.getStudentResults = async (req, res) => {
   }
 };
 
-// ================== UPDATE (Bulk update for student) ==================
+// ================== UPDATE ==================
 exports.updateStudentResults = async (req, res) => {
   const studentId = req.params.studentId;
   const connection = await db.getConnection();
@@ -151,11 +142,10 @@ exports.updateStudentResults = async (req, res) => {
   try {
     const totalSubjects = parseInt(req.body.totalSubjects, 10);
 
-    // Update results table
     const sql = `
       UPDATE results
       SET cat1 = ?, cat2 = ?, performance_level = ?, remarks = ?
-      WHERE student_id = ? AND subject = ?
+      WHERE student_id = ? AND subject = ? AND term = ? AND year = ?
     `;
 
     for (let i = 0; i < totalSubjects; i++) {
@@ -170,10 +160,9 @@ exports.updateStudentResults = async (req, res) => {
         final === 3 ? "Meeting Expectation" :
         "Exceeding Expectation";
 
-      await connection.query(sql, [cat1, cat2, final, remarks, studentId, subject]);
+      await connection.query(sql, [cat1, cat2, final, remarks, studentId, subject, req.body.term.replace(/\D/g, ''), req.body.year]);
     }
 
-    // Update report info
     await connection.query(
       `UPDATE reports
        SET opening_date = ?, closing_date = ?, remarks_on_core_competencies = ?, 
@@ -189,7 +178,7 @@ exports.updateStudentResults = async (req, res) => {
         req.body.class_teacher,
         req.body.headteacher,
         studentId,
-        req.body.term,
+        req.body.term.replace(/\D/g, ''),
         req.body.year
       ]
     );
@@ -207,7 +196,7 @@ exports.updateStudentResults = async (req, res) => {
   }
 };
 
-// ================== DELETE (Delete by Subject for Student) ==================
+// ================== DELETE ==================
 exports.deleteStudentResult = async (req, res) => {
   const { studentId, subject } = req.params;
 
@@ -226,7 +215,6 @@ exports.deleteStudentResult = async (req, res) => {
   }
 };
 
-// ================== DELETE (Admin deletes any result by ID) ==================
 exports.deleteResultById = async (req, res) => {
   const { id } = req.params;
 
